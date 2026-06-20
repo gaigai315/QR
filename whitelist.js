@@ -90,7 +90,7 @@ function processElement(element, userWhitelist, qrApi) {
         const isWhitelisted = checkIsWhitelisted(idToCheck, userWhitelist);
         const action = isWhitelisted ? 'SHOW (Whitelist)' : 'HIDE';
 
-        Logger.info(LogCategory.CORE, `匹配成功: ${detectionType} -> ${idToCheck}`, {
+        Logger.debug(LogCategory.CORE, `匹配成功: ${detectionType} -> ${idToCheck}`, {
             whitelisted: isWhitelisted,
             action: action
         });
@@ -132,7 +132,7 @@ function getAllQrSets(qrApi) {
     collect(qrApi?.settings?.chatConfig?.setList, 'chatConfig');
     collect(qrApi?.settings?.charConfig?.setList, 'charConfig');
 
-    Logger.info(LogCategory.WHITELIST, `[getAllQrSets] 缓存构建完成，共 ${totalFound} 个集合`);
+    Logger.debug(LogCategory.WHITELIST, `[getAllQrSets] 缓存构建完成，共 ${totalFound} 个集合`);
     return allQrSetsCache;
 }
 
@@ -146,7 +146,7 @@ export function applyWhitelistDOMChanges() {
     const settings = window.SillyTavern?.getContext()?.extensionSettings?.[Constants.EXTENSION_NAME];
     if (!settings) return;
 
-    Logger.info(LogCategory.CORE, '=== 开始执行白名单 DOM 更新 ===');
+    Logger.debug(LogCategory.CORE, '=== 开始执行白名单 DOM 更新 ===');
 
     // [DEBUG] 打印当前 qr--bar 的子元素概览，确认容器是否存在
     Logger.debug(LogCategory.WHITELIST, `[QR-BAR Snapshot] 子元素数量: ${qrBar.children.length}`, {
@@ -215,7 +215,7 @@ export function applyWhitelistDOMChanges() {
                 isWhite = userWhitelist.some(wid => wid.endsWith(`::${taskName}`) && wid.startsWith('LWB::'));
             }
 
-            Logger.info(LogCategory.CORE, `检测 LWB 按钮: ${taskName}`, {
+            Logger.debug(LogCategory.CORE, `检测 LWB 按钮: ${taskName}`, {
                 scope: charTasksNames.has(taskName) ? 'Character' : 'Global/Preset',
                 isWhitelisted: isWhite
             });
