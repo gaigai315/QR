@@ -18,7 +18,7 @@ function processElement(element, userWhitelist, qrApi) {
 
     let idToCheck = null;
     let detectionType = 'Unknown';
-    
+
     // [DEBUG] 打印正在处理的每一个相关 DOM 元素的基础信息
     // 仅过滤掉完全无关的 div，保留看似是容器的元素
     if (element.classList.contains('qr--buttons') || element.id.startsWith('script_container_')) {
@@ -35,24 +35,29 @@ function processElement(element, userWhitelist, qrApi) {
         idToCheck = element.id;
         detectionType = 'Builtin_ID';
     }
-    // 2. 识别 JSR 容器
+    // 2. 识别第三方注册按钮，避免误判为 QRV2 Set 容器
+    else if (element.id && getThirdPartyRegistry().some(item => item?.dom_id === element.id)) {
+        idToCheck = element.id;
+        detectionType = 'RawDomElement';
+    }
+    // 3. 识别 JSR 容器
     else if (element.id && element.id.startsWith('script_container_')) {
         const scriptId = element.id.substring('script_container_'.length);
         idToCheck = `JSR::${scriptId}`;
         detectionType = 'JSR_Container';
     }
-    // 3. 识别 QR v2 Set 容器
+    // 4. 识别 QR v2 Set 容器
     else if (element.classList.contains('qr--buttons')) {
         const sets = getAllQrSets(qrApi);
         const setData = sets.get(element);
-        
+
         if (setData?.name) {
             idToCheck = `QRV2::${setData.name}`;
             detectionType = 'QRV2_Set';
         } else {
             // [CRITICAL DEBUG] 如果是 qr--buttons 但无法从 sets 中获取，说明引用不匹配！
             // 这里开始进行 iOS 引用失效排查
-            Logger.warn(LogCategory.WHITELIST, `[ProcessElement] 发现孤立的 qr--buttons，无法匹配到 API 数据!`, {
+            Logger.debug(LogCategory.WHITELIST, `[ProcessElement] 发现非 QRV2 管理的 qr--buttons，跳过 API 匹配`, {
                 elementOuterHTML: element.outerHTML.substring(0, 100)
             });
 
@@ -75,7 +80,7 @@ function processElement(element, userWhitelist, qrApi) {
             });
 
             if (!matchFoundByStructure) {
-                Logger.warn(LogCategory.WHITELIST, `[ProcessElement] 该 qr--buttons 在 API 缓存中完全不存在对应的结构`);
+                Logger.debug(LogCategory.WHITELIST, `[ProcessElement] 该 qr--buttons 在 API 缓存中完全不存在对应的结构`);
             }
         }
     }
@@ -122,11 +127,11 @@ function getAllQrSets(qrApi) {
             }
         });
     };
-    
+
     collect(qrApi?.settings?.config?.setList, 'global');
     collect(qrApi?.settings?.chatConfig?.setList, 'chatConfig');
     collect(qrApi?.settings?.charConfig?.setList, 'charConfig');
-    
+
     Logger.info(LogCategory.WHITELIST, `[getAllQrSets] 缓存构建完成，共 ${totalFound} 个集合`);
     return allQrSetsCache;
 }
@@ -137,12 +142,12 @@ export function applyWhitelistDOMChanges() {
         Logger.warn(LogCategory.WHITELIST, '未找到 #qr--bar 元素，停止 DOM 更新');
         return;
     }
-    
+
     const settings = window.SillyTavern?.getContext()?.extensionSettings?.[Constants.EXTENSION_NAME];
     if (!settings) return;
-    
+
     Logger.info(LogCategory.CORE, '=== 开始执行白名单 DOM 更新 ===');
-    
+
     // [DEBUG] 打印当前 qr--bar 的子元素概览，确认容器是否存在
     Logger.debug(LogCategory.WHITELIST, `[QR-BAR Snapshot] 子元素数量: ${qrBar.children.length}`, {
         children: Array.from(qrBar.children).map(c => `${c.tagName}#${c.id}.${c.className}`)
