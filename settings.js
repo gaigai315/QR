@@ -821,7 +821,7 @@ export function loadAndApplySettings() {
     if (sortBtn) {
         if (settings.enableCustomSort) {
             sortBtn.textContent = translate('已开启自定义排序模式', 'qra_sort_btn_enabled');
-            sortBtn.removeAttribute('data-i18n'); // 移除原先的翻译属性防止覆盖
+            sortBtn.setAttribute('data-i18n', 'qra_sort_btn_enabled');
         } else {
             sortBtn.textContent = translate('设置', 'qra_btn_settings');
             sortBtn.setAttribute('data-i18n', 'qra_btn_settings');
@@ -2065,7 +2065,7 @@ export function openSortModal() {
         if (mainSortBtn) {
             if (settings.enableCustomSort) {
                 mainSortBtn.textContent = translate('已开启自定义排序模式', 'qra_sort_btn_enabled');
-                mainSortBtn.removeAttribute('data-i18n');
+                mainSortBtn.setAttribute('data-i18n', 'qra_sort_btn_enabled');
             } else {
                 mainSortBtn.textContent = translate('设置', 'qra_btn_settings');
                 mainSortBtn.setAttribute('data-i18n', 'qra_btn_settings');
