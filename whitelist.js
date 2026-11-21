@@ -35,18 +35,13 @@ function processElement(element, userWhitelist, qrApi) {
         idToCheck = element.id;
         detectionType = 'Builtin_ID';
     }
-    // 2. 识别第三方注册按钮，避免误判为 QRV2 Set 容器
-    else if (element.id && getThirdPartyRegistry().some(item => item?.dom_id === element.id)) {
-        idToCheck = element.id;
-        detectionType = 'RawDomElement';
-    }
-    // 3. 识别 JSR 容器
+    // 2. 识别 JSR 容器
     else if (element.id && element.id.startsWith('script_container_')) {
         const scriptId = element.id.substring('script_container_'.length);
         idToCheck = `JSR::${scriptId}`;
         detectionType = 'JSR_Container';
     }
-    // 4. 识别 QR v2 Set 容器
+    // 3. 识别 QR v2 Set 容器
     else if (element.classList.contains('qr--buttons')) {
         const sets = getAllQrSets(qrApi);
         const setData = sets.get(element);
@@ -57,7 +52,7 @@ function processElement(element, userWhitelist, qrApi) {
         } else {
             // [CRITICAL DEBUG] 如果是 qr--buttons 但无法从 sets 中获取，说明引用不匹配！
             // 这里开始进行 iOS 引用失效排查
-            Logger.debug(LogCategory.WHITELIST, `[ProcessElement] 发现非 QRV2 管理的 qr--buttons，跳过 API 匹配`, {
+            Logger.debug(LogCategory.WHITELIST, `[ProcessElement] 发现孤立的 qr--buttons，无法匹配到 API 数据!`, {
                 elementOuterHTML: element.outerHTML.substring(0, 100)
             });
 
