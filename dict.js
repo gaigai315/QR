@@ -25,6 +25,7 @@ export const dictionaries = {
         'qra_theme_smoked': 'Smoked',
         'qra_theme_aurora': 'Aurora',
         'qra_theme_forest': 'Misty Forest',
+        'qra_theme_letter': 'Japanese Letter Paper',
 
         // 卡片标题
         'qra_card_autoshrink_title': 'Auto-Hide Buttons',
@@ -202,7 +203,7 @@ export const dictionaries = {
         'qra_custom_select': '-- Select --',
         'qra_copied': 'Copied!',
         'qra_extension_name': 'QR Assistant',
-        'qra_rocket_btn_title': 'Quick Reply Menu',
+        'qra_rocket_btn_title': 'QR Assistant',
 
         // Tooltip 标签
         'qra_tooltip_source': 'Source',
@@ -221,6 +222,7 @@ export const dictionaries = {
         'qra_sort_group_empty': 'No valid buttons found in memory for this group',
         'qra_sort_expand_collapse': 'Expand/Collapse',
         'qra_btn_read': 'Read',
+        'qra_btn_copy_code': 'Copy code',
         'qra_sort_btn_enabled': 'Custom Sort Enabled',
         'qra_setting_help_sort': 'When this feature is enabled, the buttons in the QR Assistant menu will be sorted according to the order you set.\n\nThis feature is disabled by default. When disabled, the plugin uses its own logic to auto-arrange the menu buttons.\n\nThe plugin\'s default sorting logic fits most people\'s habits and is generally sufficient, but you are also welcome to customize the sorting according to your own preferences.\n\nWhen enabled, the "Settings" button on the right side of the option will change to "Custom Sort Enabled".',
     },
@@ -248,6 +250,7 @@ export const dictionaries = {
         'qra_theme_smoked': '煙燻',
         'qra_theme_aurora': '極光',
         'qra_theme_forest': '迷霧森林',
+        'qra_theme_letter': '日系信箋',
 
         // 卡片
         'qra_card_autoshrink_title': '按鈕自動折疊',
@@ -424,7 +427,7 @@ export const dictionaries = {
         'qra_custom_select': '-- 請選擇 --',
         'qra_copied': '已複製!',
         'qra_extension_name': 'QR助手',
-        'qra_rocket_btn_title': '快速回覆選單',
+        'qra_rocket_btn_title': 'QR助手 · 快速回覆選單',
 
         // Tooltip 標籤
         'qra_tooltip_source': '來源',
@@ -443,6 +446,7 @@ export const dictionaries = {
         'qra_sort_group_empty': '該分組目前在記憶體中找不到有效按鈕',
         'qra_sort_expand_collapse': '展開/收合',
         'qra_btn_read': '已閱',
+        'qra_btn_copy_code': '複製程式碼',
         'qra_sort_btn_enabled': '已開啟自訂排序模式',
         'qra_setting_help_sort': '啟用該功能後，QR助手的選單中的按鈕將會按照您設定的順序位置進行排序。\n\n該功能預設停用，停用時由擴充設計的邏輯對選單中的按鈕進行自適應排序。\n\n擴充設計的排序邏輯比較符合大多數人的習慣，一般也夠用了，當然也歡迎大家按照自己的習慣進行自訂排序。\n\n該功能啟用後，選項右側的「設定」按鈕將會變為「已開啟自訂排序模式」。',
     }
