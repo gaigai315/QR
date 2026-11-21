@@ -496,6 +496,7 @@ function renderOnboardingHeader(menuContainer, settings) {
     // 构建 UI Themes 选项
     const themes = [
         { val: Constants.UI_THEMES.LIGHT, label: translate('默认', 'qra_theme_default') },
+        { val: Constants.UI_THEMES.LETTER, label: translate('日系信笺', 'qra_theme_letter') },
         { val: Constants.UI_THEMES.SYSTEM, label: translate('跟随酒馆', 'qra_theme_system') },
         { val: Constants.UI_THEMES.CUTE, label: translate('樱花', 'qra_theme_sakura') },
         { val: Constants.UI_THEMES.CLASSICAL, label: translate('古典', 'qra_theme_classical') },

@@ -65,6 +65,12 @@ export function updateIconDisplay() {
     const faIconCode = settings.faIconCode || '';
     const sizeMode = settings.builtinIconSize || 'match'; // 内置图标大小模式
 
+    // 菜单精简器等外部脚本通过内联 order 管理输入栏排序，
+    // 重建图标时必须保留，否则小火箭会先跳回输入栏最左侧再被重排，表现为“图标互换”。
+    const preservedOrder = button.style.getPropertyValue('order');
+    const preservedOrderPriority = button.style.getPropertyPriority('order');
+    const preservedManagedClasses = Array.from(button.classList).filter((cls) => cls.startsWith('mc3-'));
+
     // 1. 清理旧样式
     button.innerHTML = '';
     button.removeAttribute('style');
@@ -74,6 +80,9 @@ export function updateIconDisplay() {
     const sendBtn = document.getElementById('send_but');
     if (sendBtn && sendBtn.classList.contains('primary-button')) button.classList.add('primary-button');
     else button.classList.add('secondary-button');
+
+    if (preservedOrder) button.style.setProperty('order', preservedOrder, preservedOrderPriority);
+    preservedManagedClasses.forEach((cls) => button.classList.add(cls));
 
     // 3. 渲染图标内容
     let myIconElement = null;
@@ -216,6 +225,7 @@ export function createSettingsHtml() {
                         <label style="font-weight:bold; min-width: 70px;" data-i18n="qra_label_ui_theme">UI 主题:</label>
                         <select id="${Constants.ID_UI_THEME_DROPDOWN}" class="text_pole" style="flex:1;">
                             <option value="${Constants.UI_THEMES.LIGHT}" data-i18n="qra_theme_default">默认</option>
+                            <option value="${Constants.UI_THEMES.LETTER}" data-i18n="qra_theme_letter">日系信笺</option>
                             <option value="${Constants.UI_THEMES.SYSTEM}" data-i18n="qra_theme_system">跟随酒馆</option>
                             <option value="${Constants.UI_THEMES.CUTE}" data-i18n="qra_theme_sakura">樱花</option>
                             <option value="${Constants.UI_THEMES.CLASSICAL}" data-i18n="qra_theme_classical">古典</option>
@@ -1497,6 +1507,53 @@ function openHelpModal() {
     overlay.innerHTML = createHelpModalHtml();
     overlay.classList.add('visible');
 
+    // 为代码块注入右上角复制按钮
+    overlay.querySelectorAll('.qr-help-content pre').forEach(pre => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'qr-code-block';
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'qr-code-copy-btn';
+        copyBtn.title = translate('复制代码', 'qra_btn_copy_code');
+        copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+
+        copyBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const code = pre.querySelector('code')?.innerText ?? pre.innerText;
+
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(code);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    textarea.remove();
+                }
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                copyBtn.classList.add('copied');
+                copyBtn.classList.remove('copy-failed');
+            } catch (err) {
+                copyBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                copyBtn.classList.add('copy-failed');
+                copyBtn.classList.remove('copied');
+            }
+
+            setTimeout(() => {
+                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                copyBtn.classList.remove('copied', 'copy-failed');
+            }, 1500);
+        });
+
+        wrapper.appendChild(copyBtn);
+    });
+
     const splitLayout = overlay.querySelector('.qr-help-split-layout');
     const sidebar = overlay.querySelector('.qr-help-sidebar');
     const toggleBtn = document.getElementById(Constants.ID_BTN_TOGGLE_SIDEBAR);
@@ -1516,8 +1573,50 @@ function openHelpModal() {
     }
 
     // 绑定目录点击事件
-    const items = overlay.querySelectorAll('.qr-toc-item');
+    const items = Array.from(overlay.querySelectorAll('.qr-toc-item'));
     const scrollView = document.getElementById('qr-help-scroll-view');
+
+    // 平滑滚动期间暂停联动，避免高亮被动画途中的章节抢走
+    let suppressSyncUntil = 0;
+
+    // 计算元素顶部相对滚动容器顶部的距离
+    const getOffsetFromViewTop = (el) => {
+        if (!el || !scrollView) return 0;
+        return el.getBoundingClientRect().top - scrollView.getBoundingClientRect().top;
+    };
+
+    // 滚动联动：正文顶部对齐到容器顶部的章节 → 高亮对应目录项
+    const syncActiveItem = () => {
+        if (!scrollView) return;
+        if (performance.now() < suppressSyncUntil) return;
+
+        const atBottom = scrollView.scrollTop + scrollView.clientHeight >= scrollView.scrollHeight - 2;
+        let activeItem = items[0];
+
+        if (atBottom) {
+            // 已滚到底：高亮最后一个有内容的章节
+            for (let i = items.length - 1; i >= 0; i--) {
+                if (document.getElementById(items[i].getAttribute('data-target'))) {
+                    activeItem = items[i];
+                    break;
+                }
+            }
+        } else {
+            // 取"顶部已越过容器顶边"的最后一个章节
+            for (const item of items) {
+                const el = document.getElementById(item.getAttribute('data-target'));
+                if (!el) continue;
+                if (getOffsetFromViewTop(el) <= 8) {
+                    activeItem = item;
+                }
+            }
+        }
+
+        if (activeItem && !activeItem.classList.contains('active')) {
+            items.forEach(i => i.classList.remove('active'));
+            activeItem.classList.add('active');
+        }
+    };
 
     items.forEach(item => {
         item.addEventListener('click', () => {
@@ -1525,13 +1624,12 @@ function openHelpModal() {
             items.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
 
-            // 滚动定位
+            // 滚动定位：目标标题首行直接对齐滚动容器顶部
             const targetId = item.getAttribute('data-target');
             const targetEl = document.getElementById(targetId);
             if (targetEl && scrollView) {
-                // 使用 scrollIntoView 或 scrollTop 计算
-                // 这里减去 20px 留一点顶部间隙
-                const topPos = targetEl.offsetTop - scrollView.offsetTop;
+                const topPos = scrollView.scrollTop + getOffsetFromViewTop(targetEl);
+                suppressSyncUntil = performance.now() + 800;
                 scrollView.scrollTo({ top: topPos, behavior: 'smooth' });
             }
 
@@ -1544,26 +1642,8 @@ function openHelpModal() {
 
     // 滚动联动：滚动正文时自动高亮对应的目录项
     if (scrollView) {
-        scrollView.addEventListener('scroll', () => {
-            const scrollTop = scrollView.scrollTop;
-            const targets = Array.from(items).map(item => {
-                const el = document.getElementById(item.getAttribute('data-target'));
-                return el ? { item, offsetTop: el.offsetTop - scrollView.offsetTop } : null;
-            }).filter(Boolean);
-
-            // 找到当前滚动位置对应的最后一个可见章节
-            let activeItem = targets[0]?.item;
-            for (const t of targets) {
-                if (scrollTop >= t.offsetTop - 20) {
-                    activeItem = t.item;
-                }
-            }
-
-            if (activeItem && !activeItem.classList.contains('active')) {
-                items.forEach(i => i.classList.remove('active'));
-                activeItem.classList.add('active');
-            }
-        });
+        scrollView.addEventListener('scroll', syncActiveItem, { passive: true });
+        syncActiveItem();
     }
 }
 
@@ -1914,11 +1994,11 @@ function createSortModalHtml(settings) {
                 <div class="qr-modal-box" style="width: 450px; max-width: 90%;">
                     <div class="qr-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <span data-i18n="qra_help_tooltip">查看详细说明</span>
-                        <button class="qr-help-close-btn" onclick="document.getElementById('qr-sort-inner-overlay').style.display='none'" title="关闭" data-i18n="[title]qra_title_close" style="color: #333 !important;">
+                        <button class="qr-help-close-btn" onclick="document.getElementById('qr-sort-inner-overlay').style.display='none'" title="关闭" data-i18n="[title]qra_title_close">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
-                    <div style="padding: 15px 10px; overflow-y: auto; max-height: 50vh; line-height: 1.6; font-size: 14px; white-space: pre-wrap; color: #333;" data-i18n="qra_sort_desc">此模式允许您自定义排列QR菜单上的按钮顺序。
+                    <div class="qr-sort-help-text" style="padding: 15px 10px; overflow-y: auto; max-height: 50vh; line-height: 1.6; font-size: 14px; white-space: pre-wrap;" data-i18n="qra_sort_desc">此模式允许您自定义排列QR菜单上的按钮顺序。
 关闭时，QR菜单上的按钮将会自适应排列（默认模式）。
 开启时，将会根据以下方式的排列显示在QR菜单上，因此你可以自行拖拽以下分组按钮进行自定义排列。
 
@@ -1940,16 +2020,16 @@ function createSortModalHtml(settings) {
             <div class="qr-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <span data-i18n="qra_sort_title">菜单分组排序管理</span>
                 <div style="display: flex; gap: 12px; align-items: center;">
-                    <button id="qr-sort-preview-btn" class="qr-help-close-btn" data-i18n="[title]qra_label_preview" title="预览" style="color: #333 !important;">
+                    <button id="qr-sort-preview-btn" class="qr-help-close-btn" data-i18n="[title]qra_label_preview" title="预览">
                         <i class="fa-solid fa-eye"></i>
                     </button>
-                    <button class="qr-help-close-btn" onclick="document.getElementById('${Constants.ID_MODAL_OVERLAY}').classList.remove('visible')" style="color: #333 !important;">
+                    <button class="qr-help-close-btn" onclick="document.getElementById('${Constants.ID_MODAL_OVERLAY}').classList.remove('visible')">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
             </div>
 
-            <div style="background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            <div class="qr-sort-toggle-block" style="background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-weight: bold;" data-i18n="qra_sort_enable">开启自定义排序模式</span>
@@ -2334,8 +2414,7 @@ function renderSortLists(settings) {
 
                     // 幽灵状态按钮样式弱化，以作视觉区分
                     if (!isActive) {
-                        btnEl.style.opacity = '0.6';
-                        btnEl.style.background = '#f9f9f9';
+                        btnEl.classList.add('is-ghost');
                     }
 
                     btnEl.innerHTML = `<span>${item.label || item.name || 'Unknown'}</span>`;
@@ -2634,11 +2713,11 @@ function createSettingHelpModalHtml(helpKey) {
     <div class="qr-modal-box" id="${Constants.ID_MODAL_SETTING_HELP}" style="max-width: 500px;">
         <div class="qr-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
             <span data-i18n="${titleI18n}">${defaultTitle}</span>
-            <button class="qr-help-close-btn" onclick="document.getElementById('${Constants.ID_MODAL_OVERLAY}').classList.remove('visible')" title="关闭" data-i18n="[title]qra_title_close" style="color: #333 !important;">
+            <button class="qr-help-close-btn" onclick="document.getElementById('${Constants.ID_MODAL_OVERLAY}').classList.remove('visible')" title="关闭" data-i18n="[title]qra_title_close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <div style="padding: 15px 10px; overflow-y: auto; max-height: 50vh; line-height: 1.6; font-size: 14px; white-space: pre-wrap; color: #333;" data-i18n="${contentI18n}">${defaultContent}</div>
+        <div class="qr-sort-help-text" style="padding: 15px 10px; overflow-y: auto; max-height: 50vh; line-height: 1.6; font-size: 14px; white-space: pre-wrap;" data-i18n="${contentI18n}">${defaultContent}</div>
         <div class="qr-modal-footer">
             <button id="${Constants.ID_BTN_CLOSE_SETTING_HELP}" class="menu_button primary" data-i18n="qra_btn_read" style="margin: 0 auto;">已阅</button>
         </div>

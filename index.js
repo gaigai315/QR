@@ -28,6 +28,8 @@ const DEFAULT_SETTINGS = {
     enableCustomSort: false, // 是否启用自定义排序模式
     groupOrder: { left: [], right: [] }, // 排序蓝图
     enableAvatarRotation: false, // 控制头像是否在打开弹窗时旋转
+    defaultQrButtonsDisabledOnce: false, // 是否已执行过"取消 Default 快速回复套 Buttons 勾选"
+    menuCleanerPlacementApplied: false, // 是否已完成菜单精简器的默认排序注入（只注入一次，之后尊重用户拖动）
 };
 
 // --- 移除顶层的设置初始化逻辑 ---
@@ -43,9 +45,152 @@ function injectRocketButton() {
 
     rocketButton = document.createElement('div');
     rocketButton.id = Constants.ID_ROCKET_BUTTON;
-    rocketButton.title = translate("快速回复菜单", 'qra_rocket_btn_title');
+    rocketButton.title = translate("QR助手", 'qra_rocket_btn_title');
     sendButton.parentNode.insertBefore(rocketButton, sendButton);
     return rocketButton;
+}
+
+// menu-cleaner（Fvck-the-useless-DOMs）会给输入栏按钮重写 order。
+// 旧版本把小火箭加入“始终排除”来避免被重排，但这会让小火箭无法参与精简器的输入栏排序。
+// 现在把小火箭纳入 sendForm 排序表：默认排在发送按钮左侧；用户自定义过位置则保持不变。
+const MENU_CLEANER_SEND_FORM_GROUP = 'sendForm';
+const MENU_CLEANER_SEND_BUTTON_KEY = '#send_but';
+const MENU_CLEANER_STOP_BUTTON_KEY = '#mes_stop';
+const MENU_CLEANER_ROCKET_LEGACY_LABEL = 'QR助手小火箭';
+
+function sortMenuCleanerOrderKeys(map) {
+    return Object.keys(map).sort((a, b) => map[a] - map[b]);
+}
+
+function getMenuCleanerKeyBeforeSendButton(map) {
+    const keys = sortMenuCleanerOrderKeys(map);
+    const index = keys.indexOf(MENU_CLEANER_SEND_BUTTON_KEY);
+    return index > 0 ? keys[index - 1] : null;
+}
+
+function moveMenuCleanerKeyBeforeSendButton(map, key) {
+    const keys = sortMenuCleanerOrderKeys(map).filter((k) => k !== key);
+    const index = keys.indexOf(MENU_CLEANER_SEND_BUTTON_KEY);
+    keys.splice(index === -1 ? keys.length : index, 0, key);
+    keys.forEach((k, i) => { map[k] = i; });
+}
+
+// 返回 null 表示精简器的排序表尚未就绪；true/false 表示本次是否有改动。
+// 默认顺序：… → 小火箭 → 中止请求 → 发送消息。
+// 只在第一次注入：完成后写入 menuCleanerPlacementApplied 标记，之后完全尊重用户在精简器里的拖动。
+function ensureRocketOrderInMenuCleaner(menuCleaner) {
+    const context = window.SillyTavern.getContext();
+    const qrSettings = context.extensionSettings[Constants.EXTENSION_NAME];
+    if (qrSettings?.menuCleanerPlacementApplied) return false;
+
+    const rocketKey = `#${Constants.ID_ROCKET_BUTTON}`;
+    const stopKey = MENU_CLEANER_STOP_BUTTON_KEY;
+    const order = menuCleaner.settings?.order?.[MENU_CLEANER_SEND_FORM_GROUP];
+    if (!order || !(MENU_CLEANER_SEND_BUTTON_KEY in order)) return null;
+
+    const nativeOrder = menuCleaner.settings.nativeOrder?.[MENU_CLEANER_SEND_FORM_GROUP];
+    const isPlaced = (map) => {
+        const keys = sortMenuCleanerOrderKeys(map);
+        const sendIndex = keys.indexOf(MENU_CLEANER_SEND_BUTTON_KEY);
+        return sendIndex >= 2 && keys[sendIndex - 2] === rocketKey && keys[sendIndex - 1] === stopKey;
+    };
+
+    let changed = false;
+
+    if (!isPlaced(order)) {
+        if (getMenuCleanerKeyBeforeSendButton(order) !== rocketKey) {
+            moveMenuCleanerKeyBeforeSendButton(order, rocketKey);
+            changed = true;
+        }
+        if (stopKey in order && getMenuCleanerKeyBeforeSendButton(order) !== stopKey) {
+            moveMenuCleanerKeyBeforeSendButton(order, stopKey);
+            changed = true;
+        }
+    }
+    if (nativeOrder
+        && MENU_CLEANER_SEND_BUTTON_KEY in nativeOrder
+        && !isPlaced(nativeOrder)) {
+        if (getMenuCleanerKeyBeforeSendButton(nativeOrder) !== rocketKey) {
+            moveMenuCleanerKeyBeforeSendButton(nativeOrder, rocketKey);
+            changed = true;
+        }
+        if (stopKey in nativeOrder && getMenuCleanerKeyBeforeSendButton(nativeOrder) !== stopKey) {
+            moveMenuCleanerKeyBeforeSendButton(nativeOrder, stopKey);
+            changed = true;
+        }
+    }
+
+    if (qrSettings) {
+        qrSettings.menuCleanerPlacementApplied = true;
+        context.saveSettingsDebounced?.();
+    }
+
+    return changed;
+}
+
+function disableMenuCleanerQrFold(menuCleaner) {
+    try {
+        const context = window.SillyTavern.getContext();
+        const mcSettings = context.extensionSettings.menu_cleaner3;
+        const alreadyDisabled = menuCleaner.settings?.enableQrFold === false
+            && (!mcSettings || mcSettings.enableQrFold === false);
+        if (alreadyDisabled) return;
+
+        if (mcSettings) mcSettings.enableQrFold = false;
+        if (menuCleaner.settings) menuCleaner.settings.enableQrFold = false;
+        menuCleaner.save?.();
+        menuCleaner.applyAll?.();
+        context.saveSettingsDebounced?.();
+        Logger.info(LogCategory.SYSTEM, '已关闭菜单精简器的 QR 面板折叠（输入栏由 QR助手管理）');
+    } catch (err) {
+        Logger.debug(LogCategory.SYSTEM, '关闭菜单精简器 QR 面板折叠失败', err);
+    }
+}
+
+function syncRocketWithMenuCleaner(retries = 120) {
+    const menuCleaner = window.__mc3;
+    if (!menuCleaner?.settings || typeof menuCleaner.applyAll !== 'function') {
+        if (retries > 0) {
+            setTimeout(() => syncRocketWithMenuCleaner(retries - 1), 1000);
+        }
+        return;
+    }
+
+    const changed = ensureRocketOrderInMenuCleaner(menuCleaner);
+    if (changed === null) {
+        if (retries > 0) {
+            setTimeout(() => syncRocketWithMenuCleaner(retries - 1), 1000);
+        }
+        return;
+    }
+
+    // 迁移：移除旧版本自动写入的“始终排除”规则，让小火箭重新参与排序
+    let legacyExclusionRemoved = false;
+    try {
+        const legacyExclusion = (menuCleaner.settings.excludedSelectors || []).find(
+            (item) => item?.selector === `#${Constants.ID_ROCKET_BUTTON}`
+                && item.label === MENU_CLEANER_ROCKET_LEGACY_LABEL
+        );
+        if (legacyExclusion && typeof menuCleaner.deleteExcludedSelector === 'function') {
+            menuCleaner.deleteExcludedSelector(legacyExclusion.id);
+            legacyExclusionRemoved = true;
+            Logger.info(LogCategory.SYSTEM, '已从菜单精简器的始终排除列表移除小火箭，允许其参与输入栏排序');
+        }
+    } catch (err) {
+        Logger.debug(LogCategory.SYSTEM, '移除菜单精简器的始终排除规则失败', err);
+    }
+
+    if (changed) {
+        menuCleaner.save?.();
+        Logger.info(LogCategory.SYSTEM, '已将小火箭和停止按钮默认排在发送按钮左侧（可在菜单精简器中自定义排序）');
+    }
+
+    // 小火箭是运行时新插入的元素，必须让精简器立即扫描一次，
+    // 否则它会以未设置 order 的状态（默认 0）短暂停在输入栏最左侧，
+    // 随后在下一次自动重扫时才跳回正确位置，形成“图标互换”的闪烁。
+    menuCleaner.applyAll?.();
+
+    disableMenuCleanerQrFold(menuCleaner);
 }
 
 // 专门用于初始化/合并设置的函数
@@ -118,6 +263,44 @@ function ensureSettingsInitialized() {
             currentSettings[key] = DEFAULT_SETTINGS[key];
         }
     });
+
+    // 旧版本的一次性标记，现已改为每次强制关闭 QR 面板折叠
+    if ('menuCleanerQrFoldDisabledOnce' in currentSettings) {
+        delete currentSettings.menuCleanerQrFoldDisabledOnce;
+        if (typeof context.saveSettingsDebounced === 'function') {
+            context.saveSettingsDebounced();
+        }
+    }
+}
+
+// 首次安装或升级后执行一次：取消 Default 快速回复套的 "Buttons" 勾选
+function disableDefaultQuickReplyButtonsOnce() {
+    try {
+        const context = window.SillyTavern.getContext();
+        const settings = context.extensionSettings[Constants.EXTENSION_NAME];
+        if (!settings || settings.defaultQrButtonsDisabledOnce) return;
+
+        const qrApi = window.quickReplyApi;
+        if (!qrApi?.settings?.config) {
+            Logger.debug(LogCategory.SYSTEM, '快速回复 API 尚未就绪，跳过 Default 按钮禁用，下次启动重试');
+            return;
+        }
+
+        const defaultLink = qrApi.settings.config.setList?.find(link => link.set?.name === 'Default');
+        if (defaultLink?.isVisible) {
+            defaultLink.isVisible = false;
+            qrApi.settings.save();
+            if (typeof qrApi.settingsUi?.rerender === 'function') {
+                qrApi.settingsUi.rerender();
+            }
+            Logger.info(LogCategory.SYSTEM, '已取消 Default 快速回复套的 Buttons 勾选');
+        }
+
+        settings.defaultQrButtonsDisabledOnce = true;
+        context.saveSettingsDebounced();
+    } catch (err) {
+        Logger.error(LogCategory.SYSTEM, '禁用 Default 快速回复按钮失败', err);
+    }
 }
 
 function initializePlugin() {
@@ -136,6 +319,9 @@ function initializePlugin() {
         // --- 在这里调用设置初始化 ---
         // 此时 APP_READY 已触发，window.extension_settings 肯定已经包含了从硬盘读取的数据
         ensureSettingsInitialized();
+
+        // 首次安装/升级后执行一次：取消 Default 快速回复套的 "Buttons" 勾选
+        disableDefaultQuickReplyButtonsOnce();
 
         const rocketButton = injectRocketButton();
         if (!rocketButton) return;
@@ -166,7 +352,8 @@ function initializePlugin() {
             observeBarMutations,
             populateWhitelistManagementUI, // 暴露给 whitelist.js 调用
             openSortModal, // 暴露给 ui.js 调用
-            syncCombinedCheckbox // 暴露给全局调用
+            syncCombinedCheckbox, // 暴露给全局调用
+            syncRocketWithMenuCleaner: () => syncRocketWithMenuCleaner(0)
         };
 
         // 注入菜单到 body
@@ -184,6 +371,9 @@ function initializePlugin() {
 
         applyWhitelistDOMChanges();
         observeBarMutations();
+
+        // 兼容 menu-cleaner：把小火箭纳入输入栏排序，默认排在发送按钮左侧
+        syncRocketWithMenuCleaner();
 
         // 启动时后台检测更新与公告检查 (不阻塞 UI)
         setTimeout(() => {

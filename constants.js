@@ -181,7 +181,8 @@ export const UI_THEMES = {
     FOREST: 'theme-forest',
     DARK: 'theme-dark',
     CUTE: 'theme-cute',         // 少女风
-    CLASSICAL: 'theme-classical' // 古典风
+    CLASSICAL: 'theme-classical', // 古典风
+    LETTER: 'theme-letter'      // 日系信笺（暖纸贴纸风）
 };
 
 // --- 排序管理弹窗 ID ---

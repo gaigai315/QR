@@ -40,6 +40,18 @@ body.qra-disabled .qrq-hidden-by-plugin,
 body.qra-disabled .qrq-whitelisted-original,
 body.qra-disabled .qrq-wrapper-visible { display: initial !important; }
 
+/* 生成/滑动期间，酒馆会隐藏发送按钮并显示 #mes_stop。
+   让停止按钮按发送按钮的尺寸占位，避免输入栏按钮整体位移。 */
+body:is([data-generating="true"], [data-swiping="true"]) #mes_stop {
+    box-sizing: border-box;
+    width: var(--bottomFormBlockSize);
+    height: var(--bottomFormBlockSize);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ===========================================================
    1.5. 混合容器逻辑 (修复非合并模式层级问题)
    =========================================================== */
@@ -1524,10 +1536,22 @@ body.qra-theme-system {
 
 /* ===========================================================
    14. 帮助弹窗专用样式 (Help Modal)
+   统一采用日系信笺暖纸风格（不随菜单主题变化）
    =========================================================== */
 
 /* 调整弹窗容器大小 */
 .qr-modal-box.qr-help-mode {
+    /* 日系信笺暖纸令牌（本弹窗自包含，不依赖 body 主题类） */
+    --qp-letter-ink: #4f4138;
+    --qp-letter-ink-soft: #8f7a68;
+    --qp-letter-border: #e6d2bd;
+    --qp-letter-card-border: #ecdccb;
+    --qp-letter-accent: #e07b6c;
+    --qp-letter-accent-text: #b64f41;
+    --qp-letter-accent-light: rgba(224, 123, 108, 0.16);
+    --qp-letter-accent-faint: rgba(224, 123, 108, 0.07);
+    --qp-letter-accent-rule: rgba(224, 123, 108, 0.32);
+
     width: 900px;
     max-width: 95vw;
     height: 85vh;
@@ -1536,28 +1560,38 @@ body.qra-theme-system {
     display: flex;
     flex-direction: column;
 
-    /* 强制保持深色主题以适配内部文档设计 */
-    background: #202020;
-    border: 1px solid #444;
-    color: #fff;
-}
-
-/* 修复 Help Header 在深色模式下的边框和文字颜色 */
-.qr-modal-box.qr-help-mode .qr-help-header {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    color: #fff;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 250, 244, 0.97) 0%,
+            rgba(255, 250, 244, 0.95) 16%,
+            rgba(255, 247, 238, 0.91) 44%,
+            rgba(255, 247, 238, 0.94) 72%,
+            rgba(250, 237, 225, 0.97) 100%),
+        radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 42%),
+        radial-gradient(rgba(224, 123, 108, 0.05) 1px, transparent 1.4px),
+        linear-gradient(165deg, #fffaf4 0%, #f9ede0 52%, #f3e2d0 100%);
+    background-size: auto, auto, 14px 14px, auto;
+    border: 2px solid var(--qp-letter-border);
+    border-radius: 18px;
+    color: var(--qp-letter-ink);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 6px 0 rgba(139, 96, 64, 0.13),
+        0 20px 44px rgba(85, 55, 35, 0.20);
 }
 
 /* 弹窗头部 */
 .qr-help-header {
     padding: 15px 20px;
-    border-bottom: 1px solid var(--smart-theme-border, rgba(255,255,255,0.1));
+    border-bottom: 1px solid var(--qp-letter-card-border);
     font-size: 18px;
     font-weight: bold;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0,0,0,0.15);
+    background: linear-gradient(180deg, rgba(255, 251, 246, 0.96), rgba(252, 242, 231, 0.88));
+    color: var(--qp-letter-accent-text);
+    letter-spacing: 0.03em;
     flex-shrink: 0;
 }
 
@@ -1573,33 +1607,43 @@ body.qra-theme-system {
     display: none; /* 仅在移动端显示 */
     background: transparent;
     border: none;
-    color: var(--smart-theme-body-color, #fff);
+    color: var(--qp-letter-ink, #4f4138);
     font-size: 18px;
     cursor: pointer;
     opacity: 0.7;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, color 0.2s, background-color 0.2s;
+    border-radius: 8px;
     padding: 4px;
 }
-.qr-help-sidebar-toggle:hover { opacity: 1; }
+.qr-help-sidebar-toggle:hover {
+    opacity: 1;
+    color: var(--qp-letter-accent-text, #b64f41);
+    background: var(--qp-letter-accent-faint, rgba(224, 123, 108, 0.07));
+}
 
 .qr-help-close-btn {
     background: transparent;
     border: none;
-    color: var(--smart-theme-body-color, #fff);
+    color: var(--qp-letter-ink, #4f4138);
     font-size: 20px;
     cursor: pointer;
     opacity: 0.7;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, color 0.2s, background-color 0.2s;
+    border-radius: 8px;
 }
-.qr-help-close-btn:hover { opacity: 1; }
+.qr-help-close-btn:hover {
+    opacity: 1;
+    color: var(--qp-letter-accent-text, #b64f41);
+    background: var(--qp-letter-accent-faint, rgba(224, 123, 108, 0.07));
+}
 
 /* 顶部视频容器 */
 .qr-help-video-container {
     flex-shrink: 0;
-    background: #000;
+    background: rgba(250, 240, 229, 0.7);
     width: 100%;
     text-align: center;
-    border-bottom: 1px solid var(--smart-theme-border, rgba(255,255,255,0.1));
+    border-bottom: 1px solid var(--qp-letter-card-border);
     padding: 10px;
 }
 
@@ -1607,8 +1651,8 @@ body.qra-theme-system {
     max-width: 100%;
     max-height: 250px; /* 限制高度，留出空间给文字 */
     outline: none;
-    border-radius: 4px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border-radius: 10px;
+    box-shadow: 0 3px 0 rgba(139, 96, 64, 0.14), 0 10px 22px rgba(85, 55, 35, 0.16);
 }
 
 /* 下方双栏布局容器 */
@@ -1616,15 +1660,15 @@ body.qra-theme-system {
     display: flex;
     flex: 1;
     overflow: hidden; /* 关键：内部滚动 */
-    background: rgba(0,0,0,0.05);
+    background: transparent;
 }
 
 /* 左侧侧边栏 */
 .qr-help-sidebar {
     width: 200px;
     flex-shrink: 0;
-    background: rgba(0,0,0,0.1);
-    border-right: 1px solid var(--smart-theme-border, rgba(255,255,255,0.1));
+    background: rgba(250, 240, 229, 0.72);
+    border-right: 1px solid var(--qp-letter-card-border);
     overflow-y: auto;
     padding: 15px 10px;
     display: flex;
@@ -1635,25 +1679,25 @@ body.qra-theme-system {
 .qr-toc-item {
     padding: 8px 12px;
     font-size: 13px;
-    color: var(--smart-theme-body-color, #ccc);
+    color: #7b6453;
     cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.2s, color 0.2s;
+    border-radius: 10px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
     text-decoration: none;
     display: block;
-    opacity: 0.8;
-}
-
-.qr-toc-item:hover {
-    background: rgba(255,255,255,0.05);
-    color: #fff;
     opacity: 1;
 }
 
+.qr-toc-item:hover {
+    background: var(--qp-letter-accent-faint);
+    color: var(--qp-letter-ink);
+}
+
 .qr-toc-item.active {
-    background: var(--SmartThemeQuoteColor, #666);
-    color: #fff;
+    background: var(--qp-letter-accent-light);
+    color: var(--qp-letter-accent-text);
     font-weight: bold;
+    box-shadow: inset 3px 0 0 var(--qp-letter-accent);
     opacity: 1;
 }
 
@@ -1669,8 +1713,9 @@ body.qra-theme-system {
     padding: 25px 30px;
     overflow-y: auto;
     scroll-behavior: smooth; /* 平滑滚动 */
-    line-height: 1.6;
-    color: var(--smart-theme-body-color, #eee);
+    line-height: 1.75;
+    color: var(--qp-letter-ink);
+    background: rgba(255, 253, 248, 0.82);
 }
 
 /* 正文排版优化 */
@@ -1679,8 +1724,9 @@ body.qra-theme-system {
     margin-top: 5px;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    color: var(--SmartThemeQuoteColor, #fff);
+    border-bottom: 2px solid var(--qp-letter-accent-rule);
+    color: var(--qp-letter-accent-text);
+    letter-spacing: 0.02em;
 }
 /* 非首个H2增加间距 */
 .qr-help-content h2:not(:first-child) { margin-top: 40px; }
@@ -1689,8 +1735,8 @@ body.qra-theme-system {
     font-size: 1.2em;
     margin-top: 25px;
     margin-bottom: 10px;
-    color: var(--smart-theme-body-color, #fff);
-    opacity: 0.9;
+    color: var(--qp-letter-ink);
+    opacity: 1;
 }
 
 .qr-help-content h4 {
@@ -1698,7 +1744,8 @@ body.qra-theme-system {
     margin-top: 15px;
     margin-bottom: 5px;
     font-weight: bold;
-    opacity: 0.8;
+    color: var(--qp-letter-ink-soft);
+    opacity: 1;
 }
 
 .qr-help-content ul {
@@ -1710,22 +1757,135 @@ body.qra-theme-system {
 
 .qr-help-content p { margin-bottom: 10px; font-size: 14px; }
 
+.qr-help-content p,
+.qr-help-content li {
+    color: #5a4c41;
+}
+
+.qr-help-content a {
+    color: var(--qp-letter-accent-text);
+    text-decoration-color: rgba(224, 123, 108, 0.45);
+}
+
 .qr-help-content blockquote {
     margin: 15px 0;
     padding: 10px 15px;
-    background: rgba(255,255,255,0.05);
-    border-left: 4px solid var(--SmartThemeQuoteColor, #666);
-    color: var(--smart-theme-body-color, #ccc);
-    font-style: italic;
+    background: var(--qp-letter-accent-faint);
+    border-left: 4px solid var(--qp-letter-accent);
+    border-radius: 0 10px 10px 0;
+    color: #6d5b4d;
+    font-style: normal;
 }
 
+/* 行内代码 */
 .qr-help-content code {
-    background: rgba(0,0,0,0.3);
+    background: #fbeade;
     padding: 2px 5px;
-    border-radius: 4px;
+    border-radius: 6px;
     font-family: monospace;
-    color: #ffaaaa;
+    color: #c2415f;
     font-size: 0.9em;
+}
+
+/* 代码块：背景铺满整个矩形区域 */
+.qr-help-content pre {
+    margin: 12px 0 16px;
+    padding: 14px 16px;
+    background: #fbeade;
+    border: 1px solid rgba(194, 65, 95, 0.16);
+    border-radius: 10px;
+    overflow-x: auto;
+    line-height: 1.55;
+}
+
+/* 浅色自定义滚动条（Firefox；必须放在 @supports 内，
+   否则 Chrome 121+ 检测到标准属性后会忽略 ::-webkit-scrollbar 规则） */
+@supports (-moz-appearance: none) {
+    .qr-help-content pre {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(194, 65, 95, 0.26) rgba(194, 65, 95, 0.06);
+    }
+}
+
+/* 浅色自定义滚动条（WebKit） */
+.qr-help-content pre::-webkit-scrollbar {
+    height: 8px;
+}
+.qr-help-content pre::-webkit-scrollbar-track {
+    background: rgba(194, 65, 95, 0.06);
+    border-radius: 999px;
+    margin: 0 10px;
+}
+.qr-help-content pre::-webkit-scrollbar-thumb {
+    background: rgba(194, 65, 95, 0.26);
+    border-radius: 999px;
+}
+.qr-help-content pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(194, 65, 95, 0.45);
+}
+
+.qr-help-content pre code {
+    display: block;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: #c2415f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    white-space: pre;
+}
+
+/* 代码块容器（承载右上角复制按钮） */
+.qr-code-block {
+    position: relative;
+    margin: 12px 0 16px;
+}
+
+.qr-code-block > pre {
+    margin: 0;
+}
+
+.qr-code-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid rgba(194, 65, 95, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 253, 249, 0.88);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    color: #c2415f;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.qr-code-copy-btn:hover {
+    opacity: 1;
+    background: #fffdf9;
+    border-color: rgba(194, 65, 95, 0.4);
+}
+
+.qr-code-copy-btn.copied {
+    opacity: 1;
+    color: #4f8a63;
+    border-color: rgba(79, 138, 99, 0.4);
+    background: rgba(235, 247, 238, 0.95);
+}
+
+.qr-code-copy-btn.copy-failed {
+    opacity: 1;
+    color: #b64f41;
+    border-color: rgba(182, 79, 65, 0.4);
+    background: rgba(253, 235, 231, 0.95);
 }
 
 /* ===========================================================
@@ -1755,15 +1915,15 @@ body.qra-theme-system {
         z-index: 10;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
-        background: #000;
-        border-right: 1px solid var(--smart-theme-border, rgba(255,255,255,0.1));
+        background: #fdf5ec;
+        border-right: 1px solid #ecdccb;
         box-shadow: none;
     }
 
     /* 4. 侧边栏展开状态 */
     .qr-help-split-layout.qr-sidebar-open .qr-help-sidebar {
         transform: translateX(0);
-        box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+        box-shadow: 4px 0 15px rgba(85, 55, 35, 0.16);
     }
 
     /* 5. 侧边栏展开时的遮罩层效果（通过伪元素实现） */
@@ -1774,7 +1934,7 @@ body.qra-theme-system {
         left: 220px;
         right: 0;
         bottom: 0;
-        background: rgba(0,0,0,0.3);
+        background: rgba(79, 65, 56, 0.28);
         z-index: 5;
     }
 
@@ -1958,6 +2118,20 @@ body.theme-classical #qr-assistant-onboarding-header {
    19. 排序管理弹窗样式 (Drag & Drop UI)
    ================================================================= */
 
+/* 亮色弹窗（非深色的帮助模式）内的关闭/预览按钮与说明文本统一用深色，保证可读 */
+.qr-modal-box:not(.qr-help-mode) .qr-help-close-btn {
+    color: #333;
+}
+
+.qr-modal-box:not(.qr-help-mode) .qr-help-close-btn:hover {
+    color: #000;
+    opacity: 1;
+}
+
+.qr-sort-help-text {
+    color: #333;
+}
+
 .qr-sort-columns-container {
     display: flex;
     gap: 15px;
@@ -2132,6 +2306,12 @@ body.theme-classical #qr-assistant-onboarding-header {
     margin-left: 8px;
 }
 
+/* 非激活（幽灵）按钮弱化显示 */
+.qr-sort-group-item.is-ghost {
+    opacity: 0.6;
+    background: #f9f9f9;
+}
+
 /* 拖拽进行中 (原位置变为占位符) */
 .qr-sort-group.dragging {
     opacity: 0.4;
@@ -2157,4 +2337,278 @@ body.theme-classical #qr-assistant-onboarding-header {
     border-radius: 4px;
     margin: 0 !important;
     transition: none !important; /* 禁用动画以跟紧手指 */
+}
+
+/* =================================================================
+   20. 主题：日系信笺 (Theme Letter)
+   参考 hide 插件的 Galgame 主题（暖纸多层渐变 + 细点纹理 + 珊瑚橙点睛）
+   + 圆角纸卡 + 底部硬阴影（贴纸感），不使用斜切/直角造型。
+   ================================================================= */
+body.theme-letter {
+    --qp-bg: linear-gradient(165deg, #fffaf4 0%, #f9ede0 52%, #f3e2d0 100%);
+    --qp-backdrop: none;
+    --qp-border: #e6d2bd;
+    --qp-radius: 18px;
+    --qp-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 0 rgba(139, 96, 64, 0.13), 0 20px 44px rgba(85, 55, 35, 0.20);
+    --qp-text: #4f4138;
+
+    --qp-item-bg: rgba(255, 253, 249, 0.92);
+    --qp-item-hover: #fffaf4;
+    --qp-item-active: #fbeade;
+    --qp-accent: #b64f41;
+
+    --qp-radius-sm: 12px;
+    --qp-item-margin: 8px;
+
+    /* 日系信笺私有令牌（配色取自 hide 插件） */
+    --qp-letter-ink: #4f4138;
+    --qp-letter-ink-soft: #8f7a68;
+    --qp-letter-border: #e6d2bd;
+    --qp-letter-card-border: #ecdccb;
+    --qp-letter-paper: rgba(255, 253, 249, 0.94);
+    --qp-letter-accent: #e07b6c;
+    --qp-letter-accent-hover: #cc6a5c;
+    --qp-letter-accent-text: #b64f41;
+    --qp-letter-accent-light: rgba(224, 123, 108, 0.16);
+    --qp-letter-accent-faint: rgba(224, 123, 108, 0.07);
+    --qp-letter-accent-rule: rgba(224, 123, 108, 0.32);
+    --qp-letter-shadow-hard: 0 3px 0 rgba(139, 96, 64, 0.14);
+    --qp-letter-shadow-soft: 0 8px 20px rgba(85, 55, 35, 0.12);
+    --qp-letter-inset: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    --qp-letter-paper-bg:
+        linear-gradient(180deg,
+            rgba(255, 250, 244, 0.90) 0%,
+            rgba(255, 250, 244, 0.80) 14%,
+            rgba(255, 247, 238, 0.58) 34%,
+            rgba(255, 247, 238, 0.72) 68%,
+            rgba(250, 237, 225, 0.86) 100%),
+        radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 42%),
+        radial-gradient(rgba(224, 123, 108, 0.05) 1px, transparent 1.4px),
+        linear-gradient(165deg, #fffaf4 0%, #f9ede0 52%, #f3e2d0 100%);
+    --qp-letter-paper-bg-solid:
+        linear-gradient(180deg,
+            rgba(255, 250, 244, 0.97) 0%,
+            rgba(255, 250, 244, 0.95) 16%,
+            rgba(255, 247, 238, 0.91) 44%,
+            rgba(255, 247, 238, 0.94) 72%,
+            rgba(250, 237, 225, 0.97) 100%),
+        radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 42%),
+        radial-gradient(rgba(224, 123, 108, 0.05) 1px, transparent 1.4px),
+        linear-gradient(165deg, #fffaf4 0%, #f9ede0 52%, #f3e2d0 100%);
+}
+
+/* --- 容器：暖纸多层渐变 + 细点纹理 + 内高光 + 底部硬阴影 --- */
+body.theme-letter #qr-assistant {
+    border: 2px solid var(--qp-letter-border) !important;
+    border-radius: 18px !important;
+    background: var(--qp-letter-paper-bg) !important;
+    background-size: auto, auto, 14px 14px, auto !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 6px 0 rgba(139, 96, 64, 0.13),
+        0 20px 44px rgba(85, 55, 35, 0.20) !important;
+}
+
+/* 遮罩层：暖褐薄纱 */
+body.theme-letter #quick-reply-backdrop {
+    background-color: rgba(74, 61, 54, 0.32);
+}
+
+/* --- 菜单按钮：圆角纸卡 + 内高光，悬停轻抬并转珊瑚描边 --- */
+body.theme-letter #qr-assistant .action-item {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255, 253, 249, 0.97) 0%, rgba(255, 249, 242, 0.93) 100%) !important;
+    border: 1px solid var(--qp-letter-card-border) !important;
+    border-radius: 12px !important;
+    color: var(--qp-letter-ink) !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: var(--qp-letter-inset) !important;
+    transform: none !important;
+    transition:
+        transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease !important;
+}
+
+body.theme-letter #qr-assistant .action-item > span {
+    transform: none !important;
+    display: inline-block;
+    transition: color 0.18s ease !important;
+}
+
+body.theme-letter #qr-assistant .action-item:hover {
+    background: linear-gradient(180deg, #fffdf9 0%, #fdf4ea 100%) !important;
+    border-color: rgba(224, 123, 108, 0.55) !important;
+    color: var(--qp-letter-accent-text) !important;
+    box-shadow:
+        var(--qp-letter-inset),
+        var(--qp-letter-shadow-hard),
+        0 8px 18px rgba(139, 96, 64, 0.10) !important;
+    transform: translateY(-2px) !important;
+}
+
+body.theme-letter #qr-assistant .action-item:active,
+body.theme-letter #qr-assistant .action-item.active {
+    background: linear-gradient(180deg, #fdf0e5 0%, #fbe6d6 100%) !important;
+    border-color: var(--qp-letter-accent) !important;
+    color: var(--qp-letter-accent-text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 0 rgba(139, 96, 64, 0.10) !important;
+    transform: translateY(1px) !important;
+}
+
+/* 分组连接：同组按钮紧贴成一张纸卡（首尾圆角，组内无缝） */
+body.theme-letter #qr-assistant .action-item.group-start {
+    border-radius: 12px 12px 0 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    box-shadow: var(--qp-letter-inset) !important;
+}
+
+body.theme-letter #qr-assistant .action-item.group-middle {
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+body.theme-letter #qr-assistant .action-item.group-end {
+    border-radius: 0 0 12px 12px !important;
+    margin-bottom: 14px !important;
+    border-top: none !important;
+    box-shadow: var(--qp-letter-inset), 0 3px 0 rgba(139, 96, 64, 0.14) !important;
+}
+
+/* 组内按钮不浮起，避免撕裂连接处 */
+body.theme-letter #qr-assistant .action-item.group-start,
+body.theme-letter #qr-assistant .action-item.group-middle,
+body.theme-letter #qr-assistant .action-item.group-end,
+body.theme-letter #qr-assistant .action-item.group-start:hover,
+body.theme-letter #qr-assistant .action-item.group-middle:hover,
+body.theme-letter #qr-assistant .action-item.group-end:hover,
+body.theme-letter #qr-assistant .action-item.group-start:active,
+body.theme-letter #qr-assistant .action-item.group-middle:active,
+body.theme-letter #qr-assistant .action-item.group-end:active,
+body.theme-letter #qr-assistant .action-item.group-start.active,
+body.theme-letter #qr-assistant .action-item.group-middle.active,
+body.theme-letter #qr-assistant .action-item.group-end.active {
+    transform: none !important;
+}
+
+/* 组内 hover/active 用内描边补足被去掉的横向边线 */
+body.theme-letter #qr-assistant .action-item.group-start:hover,
+body.theme-letter #qr-assistant .action-item.group-middle:hover,
+body.theme-letter #qr-assistant .action-item.group-end:hover {
+    box-shadow: var(--qp-letter-inset), inset 0 0 0 1px rgba(224, 123, 108, 0.45) !important;
+}
+
+body.theme-letter #qr-assistant .action-item.group-end:hover {
+    box-shadow: var(--qp-letter-inset), inset 0 0 0 1px rgba(224, 123, 108, 0.45), 0 3px 0 rgba(139, 96, 64, 0.14) !important;
+}
+
+body.theme-letter #qr-assistant .action-item.group-start:active,
+body.theme-letter #qr-assistant .action-item.group-middle:active,
+body.theme-letter #qr-assistant .action-item.group-end:active,
+body.theme-letter #qr-assistant .action-item.group-start.active,
+body.theme-letter #qr-assistant .action-item.group-middle.active,
+body.theme-letter #qr-assistant .action-item.group-end.active {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 0 0 1px var(--qp-letter-accent) !important;
+}
+
+body.theme-letter #qr-assistant .action-item:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* 滚动条：暖褐细条 */
+body.theme-letter #qr-assistant .action-list.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: rgba(196, 165, 138, 0.6);
+}
+
+/* 空状态文字 */
+body.theme-letter #qr-assistant .empty-state {
+    color: var(--qp-letter-ink-soft);
+    font-style: normal;
+    letter-spacing: 0.06em;
+    opacity: 0.8;
+}
+
+/* --- 首次设置栏 --- */
+body.theme-letter #qr-assistant-onboarding-header {
+    background: linear-gradient(180deg, rgba(255, 251, 246, 0.95), rgba(250, 238, 226, 0.9)) !important;
+    border-bottom: 1px solid var(--qp-letter-card-border) !important;
+}
+
+body.theme-letter #qr-assistant .qr-ob-btn {
+    background: linear-gradient(180deg, #e88a76 0%, #e88a76 52%, #d96d58 52%, #d96d58 100%) !important;
+    border-radius: 10px !important;
+    letter-spacing: 0.04em !important;
+    box-shadow: 0 3px 0 rgba(139, 60, 44, 0.28) !important;
+}
+
+body.theme-letter #qr-assistant .qr-ob-btn:hover {
+    background: linear-gradient(180deg, #e07b6c 0%, #e07b6c 52%, #cc6a5c 52%, #cc6a5c 100%) !important;
+    opacity: 1 !important;
+}
+
+body.theme-letter #qr-assistant .qr-ob-select,
+body.theme-letter #qr-assistant .qr-ob-icon-btn {
+    border-radius: 10px !important;
+    border-color: var(--qp-letter-card-border) !important;
+    background: rgba(255, 253, 249, 0.95) !important;
+    box-shadow: var(--qp-letter-inset);
+}
+
+/* 预览态退出按钮容器 */
+body.theme-letter #qr-preview-exit-container {
+    background: rgba(252, 243, 233, 0.96) !important;
+    border-top: 1px solid var(--qp-letter-card-border) !important;
+}
+
+/* --- 设置项帮助弹窗 --- */
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help {
+    background: var(--qp-letter-paper-bg-solid) !important;
+    background-size: auto, auto, 14px 14px, auto !important;
+    border: 2px solid var(--qp-letter-border) !important;
+    border-radius: 18px !important;
+    color: var(--qp-letter-ink) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 6px 0 rgba(139, 96, 64, 0.13),
+        0 20px 44px rgba(85, 55, 35, 0.20) !important;
+}
+
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .qr-modal-header {
+    border-bottom: 2px solid var(--qp-letter-accent-rule) !important;
+    color: var(--qp-letter-accent-text) !important;
+    letter-spacing: 0.03em;
+}
+
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .qr-help-close-btn {
+    color: var(--qp-letter-ink) !important;
+    border-radius: 8px;
+}
+
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .qr-help-close-btn:hover {
+    color: var(--qp-letter-accent-text) !important;
+    background: var(--qp-letter-accent-faint);
+    opacity: 1;
+}
+
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .qr-sort-help-text {
+    color: #5a4c41 !important;
+}
+
+/* --- 主操作按钮：赛璐璐两段式渐变 + 底部硬阴影 --- */
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .menu_button.primary {
+    background: linear-gradient(180deg, #e88a76 0%, #e88a76 52%, #d96d58 52%, #d96d58 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    color: #fffaf4 !important;
+    box-shadow: 0 3px 0 rgba(139, 60, 44, 0.28) !important;
+}
+
+body.theme-letter .qr-modal-box#qr-assistant-modal-setting-help .menu_button.primary:hover {
+    background: linear-gradient(180deg, #e07b6c 0%, #e07b6c 52%, #cc6a5c 52%, #cc6a5c 100%) !important;
 }
