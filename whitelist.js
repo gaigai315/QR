@@ -18,7 +18,7 @@ function processElement(element, userWhitelist, qrApi) {
 
     let idToCheck = null;
     let detectionType = 'Unknown';
-    
+
     // [DEBUG] 打印正在处理的每一个相关 DOM 元素的基础信息
     // 仅过滤掉完全无关的 div，保留看似是容器的元素
     if (element.classList.contains('qr--buttons') || element.id.startsWith('script_container_')) {
@@ -45,7 +45,7 @@ function processElement(element, userWhitelist, qrApi) {
     else if (element.classList.contains('qr--buttons')) {
         const sets = getAllQrSets(qrApi);
         const setData = sets.get(element);
-        
+
         if (setData?.name) {
             idToCheck = `QRV2::${setData.name}`;
             detectionType = 'QRV2_Set';
@@ -122,11 +122,11 @@ function getAllQrSets(qrApi) {
             }
         });
     };
-    
+
     collect(qrApi?.settings?.config?.setList, 'global');
     collect(qrApi?.settings?.chatConfig?.setList, 'chatConfig');
     collect(qrApi?.settings?.charConfig?.setList, 'charConfig');
-    
+
     Logger.debug(LogCategory.WHITELIST, `[getAllQrSets] 缓存构建完成，共 ${totalFound} 个集合`);
     return allQrSetsCache;
 }
@@ -137,12 +137,12 @@ export function applyWhitelistDOMChanges() {
         Logger.warn(LogCategory.WHITELIST, '未找到 #qr--bar 元素，停止 DOM 更新');
         return;
     }
-    
+
     const settings = window.SillyTavern?.getContext()?.extensionSettings?.[Constants.EXTENSION_NAME];
     if (!settings) return;
-    
+
     Logger.debug(LogCategory.CORE, '=== 开始执行白名单 DOM 更新 ===');
-    
+
     // [DEBUG] 打印当前 qr--bar 的子元素概览，确认容器是否存在
     Logger.debug(LogCategory.WHITELIST, `[QR-BAR Snapshot] 子元素数量: ${qrBar.children.length}`, {
         children: Array.from(qrBar.children).map(c => `${c.tagName}#${c.id}.${c.className}`)
